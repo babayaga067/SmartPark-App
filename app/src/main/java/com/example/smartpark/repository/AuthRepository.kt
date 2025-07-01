@@ -12,6 +12,6 @@ interface AuthRepository {
     suspend fun logout()
 
     fun isUserLoggedIn(): Boolean
-    fun sendPasswordReset(email: String): Result<Unit>
+
 
 }
