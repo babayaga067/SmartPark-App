@@ -18,7 +18,7 @@ class ForgotPasswordViewModel : ViewModel() {
         _resetState.value = ForgotPasswordState.Loading
 
         viewModelScope.launch {
-            val result = repository.sendPasswordReset(email)
+            val result = repository.resetPassword(email)
             _resetState.value = if (result.isSuccess) {
                 ForgotPasswordState.Success
             } else {
