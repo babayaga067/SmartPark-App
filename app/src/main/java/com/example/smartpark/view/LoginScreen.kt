@@ -1,84 +1,125 @@
 package com.example.smartpark.view
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import android.widget.Toast
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.smartpark.viewmodel.LoginState
+import com.example.smartpark.viewmodel.LoginViewModel
 
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun LoginScreen() {
+fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewModel()) {
 
-    var userName by remember { mutableStateOf("") }
-    var userEmail by remember { mutableStateOf("") }
-    var userPassword by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    // Input fields
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val loginState by viewModel.loginState.collectAsState()
+
+    // Handle login state changes from ViewModel
+    LaunchedEffect(loginState) {
+        when (loginState) {
+            is LoginState.Loading -> isLoading = true
+
+            is LoginState.Success -> {
+                isLoading = false
+                Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+                viewModel.resetState()
+
+                navController.navigate("home") {
+                    popUpTo("login") { inclusive = true }
+                }
+            }
+
+            is LoginState.Error -> {
+                isLoading = false
+                val message = (loginState as LoginState.Error).message
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                viewModel.resetState()
+            }
+
+            else -> Unit
+        }
+    }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Login",
-            style = MaterialTheme.typography.headlineLarge
-        )
-
-        OutlinedTextField(
-            value = userName,
-            onValueChange = { userName = it },
-            label = { Text("Username") },
-            placeholder = { Text("Enter your name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = userEmail,
-            onValueChange = { userEmail = it },
-            label = { Text("Email") },
-            placeholder = { Text("Enter your Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = userPassword,
-            onValueChange = { userPassword = it },
-            label = { Text("Password") },
-            placeholder = { Text("Enter your password") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = userName,
-            onValueChange = { userName = it },
-            label = { Text("Confirm Password") },
-            placeholder = { Text("Confirm your password") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        Text("Login", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = { /* Handle login button click */ },
+        // Email input
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            isError = viewModel.emailError.value != null,
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Login")
+        )
+        viewModel.emailError.value?.let {
+            Text(it, color = MaterialTheme.colorScheme.error)
         }
 
+        // Password input
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Password") },
+            isError = viewModel.passwordError.value != null,
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth()
+        )
+        viewModel.passwordError.value?.let {
+            Text(it, color = MaterialTheme.colorScheme.error)
+        }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Login button
+        Button(
+            onClick = {
+                if (viewModel.validateInputs(email, password)) {
+                    viewModel.loginUser(email, password)
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
+        ) {
+            Text(if (isLoading) "Logging in..." else "Login")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Register + Forgot Password buttons
+        TextButton(onClick = { navController.navigate("register") }) {
+            Text("Don't have an account? Register")
+        }
+
+        TextButton(onClick = { navController.navigate("forgot") }) {
+            Text("Forgot Password?")
+        }
     }
-    
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    // Preview doesn't support NavController easily
+    // So we can leave it out or mock it
+    // LoginScreen(navController = rememberNavController())
 }
