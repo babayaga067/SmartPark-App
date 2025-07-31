@@ -3,6 +3,14 @@ package com.example.smartpark.repository
 import com.example.smartpark.model.BookingModel
 import com.google.firebase.database.FirebaseDatabase
 
+interface BookingRepository {
+    fun getBookingsForUser(userId: String, onComplete: (List<BookingModel>) -> Unit)
+    fun getAllBookings(onComplete: (List<BookingModel>) -> Unit)
+    fun addBooking(booking: BookingModel, callback: (Boolean, String) -> Unit)
+    fun deleteBooking(bookingId: String, callback: (Boolean, String) -> Unit)
+    fun updateBooking(booking: BookingModel, callback: (Boolean, String) -> Unit)
+}
+
 class BookingRepositoryImpl : BookingRepository {
 
     private val db = FirebaseDatabase.getInstance().getReference("bookings")
