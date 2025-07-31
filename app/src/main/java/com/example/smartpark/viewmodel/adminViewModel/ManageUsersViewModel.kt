@@ -1,10 +1,12 @@
+package com.example.smartpark.viewmodel.adminViewModel
+
 import androidx.lifecycle.ViewModel
-import com.example.smartpark.repository.UserRepository
 import com.example.smartpark.model.UserModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
+import com.example.smartpark.repository.UserRepository
 
 class ManageUsersViewModel(
     private val userRepository: UserRepository
@@ -34,7 +36,7 @@ class ManageUsersViewModel(
         }
     }
 
-    fun addUser(user: UserModel, onDone: (success: Boolean, message: String) -> Unit = { _, _ -> }) {
+    fun addUser(user: UserModel, onDone: (Boolean, String) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
             _loading.value = true
             _error.value = null
@@ -51,7 +53,7 @@ class ManageUsersViewModel(
         }
     }
 
-    fun updateUser(user: UserModel, onDone: (success: Boolean, message: String) -> Unit = { _, _ -> }) {
+    fun updateUser(user: UserModel, onDone: (Boolean, String) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
             _loading.value = true
             _error.value = null
@@ -68,7 +70,7 @@ class ManageUsersViewModel(
         }
     }
 
-    fun deleteUser(userId: String, onDone: (success: Boolean, message: String) -> Unit = { _, _ -> }) {
+    fun deleteUser(userId: String, onDone: (Boolean, String) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
             _loading.value = true
             _error.value = null
@@ -78,6 +80,25 @@ class ManageUsersViewModel(
                 onDone(true, "User deleted successfully")
             } else {
                 val msg = result.exceptionOrNull()?.message ?: "Failed to delete user"
+                _error.value = msg
+                onDone(false, msg)
+            }
+            _loading.value = false
+        }
+    }
+
+    fun sendResetPassword(email: String, onDone: (Boolean, String) -> Unit = { _, _ -> }) {
+        viewModelScope.launch {
+            _loading.value = true
+            val result = try {
+                userRepository.sendPasswordResetEmail(email)
+            } catch (e: Exception) {
+                Result.failure<Unit>(e)
+            }
+            if (result.isSuccess) {
+                onDone(true, "Password reset email sent to $email")
+            } else {
+                val msg = result.exceptionOrNull()?.message ?: "Failed to send reset email"
                 _error.value = msg
                 onDone(false, msg)
             }
